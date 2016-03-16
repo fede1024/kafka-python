@@ -190,6 +190,9 @@ class KafkaClient(object):
         if self.is_ready(node_id):
             return True
 
+        return self._maybe_connect(node_id)
+
+    def _maybe_connect(self, node_id):
         if self._can_connect(node_id):
             # if we are interested in sending to a node
             # and we don't have a connection to it, initiate one
@@ -294,7 +297,10 @@ class KafkaClient(object):
         Returns:
             Future: resolves to Response struct or Error
         """
-        if not self._can_send_request(node_id):
+        # This is intended to be the same as ready(node_id)
+        # but without the metadata-refresh blackout
+        if (not self._can_send_request(node_id) and
+            not self._maybe_connect(node_id)):
             return Future().failure(Errors.NodeNotReadyError(node_id))
 
         # Every request gets a response, except one special case:
